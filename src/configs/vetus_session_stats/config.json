@@ -55,7 +55,10 @@
     "statText": true,
     "arenaStr": "<font face='$FieldFont' color='#E9E2BF'>{{arenaType}} - {{arenaGuiType}}</font>",
     "titleRegular": "<textformat tabstops='260'><font face='$FieldFont' size='16' color='#E9E2BF'>Эффективность:</font>\t</textformat>",
-    "format": "<textformat tabstops='[75, 90, 165, 200]' leading='-2'><img src='img://gui/maps/icons/library/wtrIcon_24.png' width='17' height='17' align='baseline' vspace='-5'> <img src='img://gui/maps/icons/buttons/iconUpgrade.png' width='16' height='14' align='baseline' vspace='-3'><b><font color='{{g:medPlace}}'>{{medPlace:d}}</b></font>\t<font face='$FieldFont' color='#BBBCAC'><font size='15'>WN8: <b><font color='{{c:WN8}}'>{{WN8}}</font></b>\t\tEFF: <b><font color='{{c:EFF}}'>{{EFF}}</font></font></b></textformat>"
+
+    "format":"<textformat tabstops='[75, 90, 165, 200]' leading='-2'><font color='#BBBCAC'><font  size='16'>\tWN8:<b><font color='{{c:WN8}}'>{{WN8}}</font></b>\t\tEFF:<b><font color='{{c:EFF}}'>{{EFF}}</font></font></b></font></textformat>",
+
+    "formatOLD": "<textformat tabstops='[75, 90, 165, 200]' leading='-2'><img src='img://gui/maps/icons/library/wtrIcon_24.png' width='17' height='17' align='baseline' vspace='-5'> <img src='img://gui/maps/icons/buttons/iconUpgrade.png' width='16' height='14' align='baseline' vspace='-3'><b><font color='{{g:medPlace}}'>{{medPlace:d}}</b></font>\t<font face='$FieldFont' color='#BBBCAC'><font size='15'>WN8: <b><font color='{{c:WN8}}'>{{WN8}}</font></b>\t\tEFF: <b><font color='{{c:EFF}}'>{{EFF}}</font></font></b></textformat>"
   },
   "hideMessagePatterns": [
   
