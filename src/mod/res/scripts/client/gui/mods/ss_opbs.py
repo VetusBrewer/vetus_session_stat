@@ -20,6 +20,32 @@ import re
 
 print ("VSS_OPBS Начало файла")
 
+
+# --- Сборщик статистики ---
+try:
+    from ss_statistic_collector import SSStatisticCollector
+except ImportError:
+    SSStatisticCollector = None
+    if vLog:
+        vLog("Не удалось импортировать SSStatisticCollector", "VSS_OPBS")
+
+# --- WN8 калькулятор ---
+try:
+    from ss_wn8 import SSWN8
+except ImportError:
+    SSWN8 = None
+    if vLog:
+        vLog("Не удалось импортировать SSWN8", "VSS_OPBS")
+
+# --- EFF калькулятор ---
+try:
+    from ss_eff import SSEFF
+except ImportError:
+    SSEFF = None
+    if vLog:
+        vLog("Не удалось импортировать SSEFF", "VSS_OPBS")
+
+
 # --- Логгер ---
 try:
     from ss_debuglog import vLog
@@ -54,9 +80,54 @@ def _hooked_as_setDataS(self, data):
     data — словарь с данными ПБО.
     """
     # --- Отладка: хук сработал ---
-    print "[VSS_OPBS] _hooked_as_setDataS ВЫЗВАН"
+    print ("[VSS_OPBS] _hooked_as_setDataS ВЫЗВАН")
     if vLog:
         vLog("Хук as_setDataS сработал!", "VSS_OPBS_DATA")
+
+    if SSStatisticCollector is not None:
+        try:
+            SSStatisticCollector.collect(data)
+        except Exception:
+            if vLog:
+                vLog("Ошибка в коллекторе: %s" % traceback.format_exc(), "VSS_OPBS")
+
+    # --- Расчёт WN8 ---
+    if SSWN8 is not None and SSStatisticCollector is not None:
+        try:
+            stats = SSStatisticCollector.get_stats()
+            if stats:
+                wn8_result = SSWN8.calculate(stats)
+                if wn8_result:
+                    SS_OPBS._WN8 = int(wn8_result['wn8'])
+                    if vLog:
+                        vLog("WN8 рассчитан: %d" % SS_OPBS._WN8, "VSS_OPBS_DATA")
+                else:
+                    if vLog:
+                        vLog("WN8: не удалось рассчитать (танк не найден?)", "VSS_OPBS_DATA")
+            else:
+                if vLog:
+                    vLog("WN8: get_stats() вернул пусто", "VSS_OPBS_DATA")
+        except Exception:
+            if vLog:
+                vLog("Ошибка расчёта WN8: %s" % traceback.format_exc(), "VSS_OPBS")
+
+    # --- Расчёт EFF ---
+    if SSEFF is not None and SSStatisticCollector is not None:
+        try:
+            stats = SSStatisticCollector.get_stats()
+            if stats:
+                eff_result = SSEFF.calculate(stats)
+                if eff_result:
+                    SS_OPBS._EFF = int(eff_result['eff'])
+                    if vLog:
+                        vLog("EFF рассчитан: %d" % SS_OPBS._EFF, "VSS_OPBS_DATA")
+                else:
+                    if vLog:
+                        vLog("EFF: не удалось рассчитать", "VSS_OPBS_DATA")
+        except Exception:
+            if vLog:
+                vLog("Ошибка расчёта EFF: %s" % traceback.format_exc(), "VSS_OPBS")
+
 
     try:
         # Проверка: включена ли модификация ПБО в конфиге
@@ -68,7 +139,7 @@ def _hooked_as_setDataS(self, data):
           fmt = SSConfig.get("battleResultsWindow", "format", None)
 
 
-        print "[VSS_OPBS] enabled=%s, fmt=%s" % (enabled, repr(fmt)[:100] if fmt else "None")
+        print( "[VSS_OPBS] enabled=%s, fmt=%s") % (enabled, repr(fmt)[:100] if fmt else "None")
 
         if not enabled or not fmt:
             # Модификация отключена — вызываем оригинал как есть
@@ -88,7 +159,7 @@ def _hooked_as_setDataS(self, data):
         arena = data['common'].get('arenaStr', '')[:200]
         if vLog:
             vLog("arenaStr (первые 200 символов): %s" % arena, "VSS_OPBS_DATA")
-        print "[VSS_OPBS] arenaStr: %s" % arena[:100]
+        print ("[VSS_OPBS] arenaStr: %s") % arena[:100]
 
         # Обрабатываем шаблон макросами
         processed = SS_OPBS._process_template(fmt)
@@ -101,12 +172,12 @@ def _hooked_as_setDataS(self, data):
 
         if vLog:
             vLog("arenaStr модифицирован, длина: %d" % len(data['common']['arenaStr']), "VSS_OPBS_DATA")
-        print "[VSS_OPBS] arenaStr модифицирован, новая длина: %d" % len(data['common']['arenaStr'])
+        print ("[VSS_OPBS] arenaStr модифицирован, новая длина: %d") % len(data['common']['arenaStr'])
 
     except Exception:
         if vLog:
             vLog("Ошибка в хуке: %s" % traceback.format_exc(), "VSS_OPBS")
-        print "[VSS_OPBS] ОШИБКА: %s" % traceback.format_exc()
+        print ("[VSS_OPBS] ОШИБКА: %s") % traceback.format_exc()
 
     # Вызываем оригинальный метод с (возможно) модифицированными данными
     if SS_OPBS._orig_as_setDataS is not None:
@@ -128,8 +199,8 @@ class SS_OPBS(object):
     _hooked = False
 
     # --- Заглушки статистики (будут заменены реальными данными) ---
-    _WN8 = 3200
-    _EFF = 610
+    _WN8 = 0
+    _EFF = 0
     _medPlace = 3
     _avgWinRate = 52.0
 

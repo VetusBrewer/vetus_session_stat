@@ -247,9 +247,11 @@ class SSStatisticCollector(object):
         # --- vehicle ---
         player_vehicles = common.get('playerVehicles', [])
         pv = player_vehicles[0] if player_vehicles else {}
+
         stats['vehicle'] = {
             'names': common.get('playerVehicleNames', []),
             'tankIcon': pv.get('tankIcon', ''),
+            'intCD': pv.get('intCD') or pv.get('vehTypeCompDescr'),
             'tankLevel': pv.get('tankLevel'),
             'nation': pv.get('flag', ''),
             'deathReason': pv.get('deathReason'),
@@ -257,6 +259,8 @@ class SSStatisticCollector(object):
             'killerName': pv.get('killerFakeNameStr', ''),
             'vehicleStateStr': pv.get('vehicleStateStr', ''),
         }
+        if vLog:
+            vLog("PV keys: %s" % str(pv.keys()), "VSS_STAT")
 
         # --- personal ---
         personal = data.get('personal', {})
@@ -326,6 +330,26 @@ class SSStatisticCollector(object):
         if vLog:
             vLog("Статистика собрана. Ключи: %s" % str(stats.keys()), "VSS_STAT")
 
+        if vLog:
+            for k, v in stats.items():
+                vLog("%s: %s" % (k, str(v)[:30000]), "VSS_STAT")
+
+
+        # --- WN8 ---
+        try:
+            from ss_wn8 import SSWN8
+            wn8_result = SSWN8.calculate(stats)
+            if vLog:
+                if wn8_result:
+                    vLog("WN8 result: %.0f" % wn8_result['wn8'], "VSS_WN8")
+                else:
+                    vLog("WN8 result: None", "VSS_WN8")
+        except Exception as e:
+            if vLog:
+                vLog("WN8 error: %s" % str(e), "VSS_WN8")
+
+            
+
         return stats
 
     # ---------------------------------------------------------------
@@ -348,6 +372,8 @@ class SSStatisticCollector(object):
             'subtotal': None,
             'repair': None, 'shells': None, 'equipment': None,
             'net': None,
+            'storageCredits': None,
+            'storageGold': None,
             'raw': [],  # все строки для отладки
         }
 
@@ -398,12 +424,18 @@ class SSStatisticCollector(object):
                 result['shells'] = val
             elif label_lower == u'Автопополнение снаряжения':
                 result['equipment'] = val
+            elif label_lower == u'Итого:':
+                result['net'] = val
+            elif label_lower == u'Добавлено в хранилище ресурсов':
+                result['storageCredits'] = val
+                result['storageGold'] = SSStatisticCollector._parse_int(entry.get('col4', ''))
 
-        # net — последняя значимая строка (после расходов)
-        for entry in reversed(result['raw']):
-            if entry['value'] is not None and entry['label']:
-                result['net'] = entry['value']
-                break
+        # net — fallback, если "Итого:" не найдено
+        if result['net'] is None:
+            for entry in reversed(result['raw']):
+                if entry['value'] is not None and entry['label']:
+                    result['net'] = entry['value']
+                    break
 
         return result
 

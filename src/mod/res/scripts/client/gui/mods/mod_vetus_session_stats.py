@@ -19,7 +19,7 @@ try:
 except ImportError:
     traceback.print_exc()
     def vLog(data, label="DEBUG"):
-        print "[{}] {}".format(label, data)
+        print ("[{}] {}").format(label, data)
 
 # --- ПОПЫТКА ИМПОРТА КОНФИГ-ИНСТРУМЕНТА ---
 # SSConfig - синглтон для работы с config.json
@@ -48,7 +48,7 @@ def init():
     """
     Точка входа мода. Вызывается клиентом после загрузки всех модулей.
     """
-    print "[VSS_MAIN] init() start"
+    print ("[VSS_MAIN] init() start")
 
     # 1. Инициализация конфига
     if SSConfig is not None:
@@ -59,10 +59,25 @@ def init():
             traceback.print_exc()
             vLog("Ошибка загрузки конфига", "VSS_MAIN")
     else:
-        print "[VSS_MAIN] SSConfig недоступен!"
+        print ("[VSS_MAIN] SSConfig недоступен!")
         vLog("SSConfig не импортирован", "VSS_MAIN")
 
-    # 2. Запуск хука ОПС
+    # 2. Автообновление таблицы wn8exp с сайта XVM
+
+    # --- Автообновление таблицы WN8 ---
+    try:
+        from ss_wn8_update import check_and_update
+        import os
+        table_path = os.path.join('mods', 'configs', 'vetus_session_stats', 'wn8exp.json')
+        if vLog:
+            vLog("Запуск автообновления таблицы WN8...", "VSS_WN8")
+        check_and_update(table_path)
+    except Exception as e:
+        if vLog:
+            vLog("WN8: Ошибка автообновления: %s" % str(e), "VSS_WN8")
+
+
+    # 3. Запуск хука ОПС
     if SS_OPBS is not None:
         try:
             SS_OPBS.init()
@@ -71,15 +86,15 @@ def init():
             traceback.print_exc()
             vLog("Ошибка установки хука ОПС", "VSS_MAIN")
     else:
-        print "[VSS_MAIN] SS_OPBS недоступен!"
+        print( "[VSS_MAIN] SS_OPBS недоступен!")
         vLog("SS_OPBS не импортирован", "VSS_MAIN")
 
-    print "[VSS_MAIN] init() done"
+    print ("[VSS_MAIN] init() done")
 
 
 def fini():
     """Вызывается при выгрузке мода."""
-    print "[VSS_MAIN] fini()"
+    print ("[VSS_MAIN] fini()")
     vLog("Выгрузка мода", "VSS_MAIN")
 
     if SS_OPBS is not None:
